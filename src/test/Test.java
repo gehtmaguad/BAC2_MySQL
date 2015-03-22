@@ -19,13 +19,13 @@ public class Test {
 	public static void main(String[] args) {
 
 		// Connection Details
-		String urlNormalized = "jdbc:mysql://192.168.122.244:3306/normalized";
-		String urlDenormalized = "jdbc:mysql://192.168.122.244:3306/denormalized";
-		String user = "testuser";
+		String urlNormalized = "jdbc:mysql://192.168.122.71:3306/normalized";
+		String urlDenormalized = "jdbc:mysql://192.168.122.71:3306/denormalized";
+		String user = "proxyuser";
 		String password = "test1234";
 
-		//executeInsertDenormalized(urlDenormalized, user, password);
-		//executeInsertNormalized(urlNormalized, user, password);
+		executeInsertDenormalized(urlDenormalized, user, password);
+		executeInsertNormalized(urlNormalized, user, password);
 	}
 
 	public static String randomText(Integer bits) {
@@ -52,8 +52,8 @@ public class Test {
 		try {
 			// Create Connection
 			con = DriverManager.getConnection(url, user, password);
-
-			//Helpver Variable
+			
+			//Helper Variable
 			int count;
 			int numberOfUsers = 1000;
 			int numberOfBlogs = 1000;
@@ -75,16 +75,17 @@ public class Test {
 
 			// Insert Blog
 			for (count = 0; count < numberOfBlogs; count++) {
+				// get existing user
+				resultSet = selectUserById(url, user, password, randomNumber(1, numberOfUsers), con);
 				String insertBlogStmt = "insert into Blog(blogpost, user_id, vorname, nachname, email) values(?,?,?,?,?)";
 				PreparedStatement preparedBlogStmt = con.prepareStatement(insertBlogStmt);
 				preparedBlogStmt.setString(1, randomText(5000));
-				// get existing user
-				resultSet = selectUserById(url, user, password, randomNumber(1, numberOfUsers));
 				preparedBlogStmt.setInt(2, Integer.valueOf(resultSet.get("id")));
 				preparedBlogStmt.setString(3, resultSet.get("vorname"));
 				preparedBlogStmt.setString(4, resultSet.get("nachname"));
-				preparedBlogStmt.setString(5, resultSet.get("email"));				
+				preparedBlogStmt.setString(5, resultSet.get("email"));
 				preparedBlogStmt.execute();
+
 			}
 			
 			// Insert Comment
@@ -93,7 +94,7 @@ public class Test {
 				PreparedStatement preparedCommentStmt = con.prepareStatement(insertCommentStmt);
 				preparedCommentStmt.setString(1, randomText(2000));
 				// get existing blog
-				resultSet = selectBlogByIdDenormalized(url, user, password, randomNumber(1, numberOfBlogs));
+				resultSet = selectBlogByIdDenormalized(url, user, password, randomNumber(1, numberOfBlogs), con);
 				preparedCommentStmt.setInt(2, Integer.valueOf(resultSet.get("user_id")));
 				preparedCommentStmt.setString(3, resultSet.get("vorname"));
 				preparedCommentStmt.setString(4, resultSet.get("nachname"));
@@ -108,9 +109,9 @@ public class Test {
 				String insertLikeStmt = " insert into Likes(user_id, comment_id, vorname, nachname, email, text, blog_id, blogpost) values(?,?,?,?,?,?,?,?)";
 				PreparedStatement preparedLikeStmt = con.prepareStatement(insertLikeStmt);
 				// get existing comment
-				resultSetComment = selectCommentByIdDenormalized(url, user, password, randomNumber(1, numberOfBlogs));
+				resultSetComment = selectCommentByIdDenormalized(url, user, password, randomNumber(1, numberOfBlogs), con);
 				// get existing user
-				resultSetUser = selectUserById(url, user, password, randomNumber(1, numberOfUsers));
+				resultSetUser = selectUserById(url, user, password, randomNumber(1, numberOfUsers), con);
 				preparedLikeStmt.setInt(1, Integer.valueOf(resultSetUser.get("id")));
 				preparedLikeStmt.setInt(2, Integer.valueOf(resultSetComment.get("id")));
 				preparedLikeStmt.setString(3, resultSetUser.get("vorname"));
@@ -213,6 +214,7 @@ public class Test {
 				} catch (SQLException ex) {
 					if (ex instanceof SQLIntegrityConstraintViolationException) {
 						String dummy = "ignore";
+						System.out.println("Duplicate Key Error");
 					} else {
 						Logger lgr = Logger.getLogger(Test.class.getName());
 						lgr.log(Level.SEVERE, ex.getMessage(), ex);
@@ -244,16 +246,16 @@ public class Test {
 
 	}
 
-	public static Map<String, String> selectUserById(String url, String user, String password, int id) {
+	public static Map<String, String> selectUserById(String url, String user, String password, int id, Connection con) {
 
-		Connection con = null;
+		//Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
 		Map<String, String> resultSet= null;
 
 		try {
 			// Create Connection
-			con = DriverManager.getConnection(url, user, password);
+			//con = DriverManager.getConnection(url, user, password);
 
 			// Create Prepared Query Statement
 			pst = con.prepareStatement("select id, vorname, nachname, email from User where id=?;");
@@ -283,9 +285,9 @@ public class Test {
 				if (pst != null) {
 					pst.close();
 				}
-				if (con != null) {
-					con.close();
-				}
+//				if (con != null) {
+//					con.close();
+//				}
 
 			} catch (SQLException ex) {
 				Logger lgr = Logger.getLogger(Test.class.getName());
@@ -296,16 +298,16 @@ public class Test {
 		return resultSet;
 	}
 
-	public static Map<String, String> selectBlogByIdDenormalized(String url, String user, String password, int id) {
+	public static Map<String, String> selectBlogByIdDenormalized(String url, String user, String password, int id, Connection con) {
 		
-		Connection con = null;
+		//Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
 		Map<String, String> resultSet= null;
 		
 		try {
 			// Create Connection
-			con = DriverManager.getConnection(url, user, password);
+			//con = DriverManager.getConnection(url, user, password);
 
 			// Create Prepared Query Statement
 			pst = con.prepareStatement("select id, blogpost, user_id, vorname, nachname, email from Blog where id=?;");
@@ -337,9 +339,9 @@ public class Test {
 				if (pst != null) {
 					pst.close();
 				}
-				if (con != null) {
-					con.close();
-				}
+//				if (con != null) {
+//					con.close();
+//				}
 
 			} catch (SQLException ex) {
 				Logger lgr = Logger.getLogger(Test.class.getName());
@@ -350,16 +352,16 @@ public class Test {
 		return resultSet;
 	}
 
-	public static Map<String, String> selectCommentByIdDenormalized(String url, String user, String password, int id) {
+	public static Map<String, String> selectCommentByIdDenormalized(String url, String user, String password, int id, Connection con) {
 		
-		Connection con = null;
+		//Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
 		Map<String, String> resultSet= null;
 		
 		try {
 			// Create Connection
-			con = DriverManager.getConnection(url, user, password);
+			//con = DriverManager.getConnection(url, user, password);
 
 			// Create Prepared Query Statement
 			pst = con.prepareStatement("select id, text, user_id, vorname, nachname, email, blog_id, blogpost from Comment where id=?;");
@@ -393,9 +395,9 @@ public class Test {
 				if (pst != null) {
 					pst.close();
 				}
-				if (con != null) {
-					con.close();
-				}
+//				if (con != null) {
+//					con.close();
+//				}
 
 			} catch (SQLException ex) {
 				Logger lgr = Logger.getLogger(Test.class.getName());
