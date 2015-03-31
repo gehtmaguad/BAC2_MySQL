@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -15,15 +16,20 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Test {
+	
+	public static int numberOfUsers = 1000;
+	public static int numberOfBlogs = 1000;
+	public static int numberOfComments = 1000;
+	public static int numberOfLikes = 1000;
 
 	public static void main(String[] args) {
 
 		// Connection Details
-		String urlNormalized = "jdbc:mysql://192.168.122.71:3306/normalized";
-		String urlDenormalized = "jdbc:mysql://192.168.122.71:3306/denormalized";
-		String user = "proxyuser";
+		String urlNormalized = "jdbc:mysql://192.168.122.244:3306/normalized";
+		String urlDenormalized = "jdbc:mysql://192.168.122.244:3306/denormalized";
+		String user = "testuser";
 		String password = "test1234";
-
+		
 		executeInsertDenormalized(urlDenormalized, user, password);
 		executeInsertNormalized(urlNormalized, user, password);
 	}
@@ -48,21 +54,24 @@ public class Test {
 		Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
-
+		
 		try {
 			// Create Connection
 			con = DriverManager.getConnection(url, user, password);
 			
 			//Helper Variable
 			int count;
-			int numberOfUsers = 1000;
-			int numberOfBlogs = 1000;
-			int numberOfComments = 1000;
-			int numberOfLikes = 1000;
 			Map<String, String> resultSet = null;
 			Map<String, String> resultSetComment = null;
 			Map<String, String> resultSetUser = null;
 			
+		    try {
+		        con.setAutoCommit(false);
+		        con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+		    } catch (SQLException e) {
+		        e.printStackTrace();
+		    }
+		    
 			// Insert User
 			for (count = 0; count < numberOfUsers; count++) {
 				String insertUserStmt = "insert into User(vorname, nachname, email) values(?, ?, ?)";
@@ -124,14 +133,15 @@ public class Test {
 					preparedLikeStmt.execute();
 				} catch (SQLException ex) {
 					if (ex instanceof SQLIntegrityConstraintViolationException) {
-						String dummy = "ignore";
 						System.out.println("Duplicate Key Error");
 					} else {
 						Logger lgr = Logger.getLogger(Test.class.getName());
 						lgr.log(Level.SEVERE, ex.getMessage(), ex);
 					}
 				}			
-			}				
+			}	
+			
+			con.commit();
 			
 		} catch (SQLException ex) {
 			Logger lgr = Logger.getLogger(Test.class.getName());
@@ -168,11 +178,14 @@ public class Test {
 			con = DriverManager.getConnection(url, user, password);
 
 			//Helpver Variable
-			int count;
-			int numberOfUsers = 1000;
-			int numberOfBlogs = 1000;
-			int numberOfComments = 1000;
-			int numberOfLikes = 1000;			
+			int count;		
+			
+		    try {
+		        con.setAutoCommit(false);
+		        con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+		    } catch (SQLException e) {
+		        e.printStackTrace();
+		    }			
 			
 			// Insert User
 			for (count = 0; count < numberOfUsers; count++) {
@@ -213,14 +226,15 @@ public class Test {
 					preparedLikeStmt.execute();
 				} catch (SQLException ex) {
 					if (ex instanceof SQLIntegrityConstraintViolationException) {
-						String dummy = "ignore";
 						System.out.println("Duplicate Key Error");
 					} else {
 						Logger lgr = Logger.getLogger(Test.class.getName());
 						lgr.log(Level.SEVERE, ex.getMessage(), ex);
 					}
 				}			
-			}			
+			}		
+			
+			con.commit();
 			
 		} catch (SQLException ex) {
 			Logger lgr = Logger.getLogger(Test.class.getName());
