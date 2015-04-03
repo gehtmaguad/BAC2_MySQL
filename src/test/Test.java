@@ -26,9 +26,9 @@ public class Test {
 	public static void main(String[] args) {
 
 		// Connection Details
-		String urlNormalized = "jdbc:mysql://192.168.122.15:3306/normalized";
-		String urlDenormalized = "jdbc:mysql://192.168.122.15:3306/denormalized";
-		String user = "testuser";
+		String urlNormalized = "jdbc:mysql://192.168.122.71:3306/normalized";
+		String urlDenormalized = "jdbc:mysql://192.168.122.71:3306/denormalized";
+		String user = "proxyuser";
 		String password = "test1234";
 
 //		long startTime = System.nanoTime();
@@ -47,8 +47,8 @@ public class Test {
 //		System.out.println(result);
 //		System.out.println("Duration: " + seconds);
 		
-		 executeInsertDenormalized(urlDenormalized, user, password);
-		// executeInsertNormalized(urlNormalized, user, password);
+//		 executeInsertDenormalized(urlDenormalized, user, password);
+//		 executeInsertNormalized(urlNormalized, user, password);
 	}
 
 	public static String randomText(Integer bits) {
@@ -90,34 +90,34 @@ public class Test {
 				e.printStackTrace();
 			}
 
-//			// Insert User
-//			for (count = 0; count < numberOfUsers; count++) {
-//				String insertUserStmt = "insert into User(vorname, nachname, email) values(?, ?, ?)";
-//				PreparedStatement preparedUserStmt = con
-//						.prepareStatement(insertUserStmt);
-//				preparedUserStmt.setString(1, randomText(100));
-//				preparedUserStmt.setString(2, randomText(150));
-//				preparedUserStmt.setString(3, randomText(120) + "@"
-//						+ randomText(20) + "." + randomText(10));
-//				preparedUserStmt.execute();
-//			}
+			// Insert User
+			for (count = 0; count < numberOfUsers; count++) {
+				String insertUserStmt = "insert into User(vorname, nachname, email) values(?, ?, ?)";
+				PreparedStatement preparedUserStmt = con
+						.prepareStatement(insertUserStmt);
+				preparedUserStmt.setString(1, randomText(100));
+				preparedUserStmt.setString(2, randomText(150));
+				preparedUserStmt.setString(3, randomText(120) + "@"
+						+ randomText(20) + "." + randomText(10));
+				preparedUserStmt.execute();
+			}
 
-//			// Insert Blog
-//			for (count = 0; count < numberOfBlogs; count++) {
-//				// get existing user
-//				resultSet = selectUserById(url, user, password,
-//						randomNumber(1, numberOfUsers), con);
-//				String insertBlogStmt = "insert into Blog(blogpost, u_id, u_vorname, u_nachname, u_email) values(?,?,?,?,?)";
-//				PreparedStatement preparedBlogStmt = con
-//						.prepareStatement(insertBlogStmt);
-//				preparedBlogStmt.setString(1, randomText(5000));
-//				preparedBlogStmt.setInt(2, Integer.valueOf(resultSet.get("id")));
-//				preparedBlogStmt.setString(3, resultSet.get("vorname"));
-//				preparedBlogStmt.setString(4, resultSet.get("nachname"));
-//				preparedBlogStmt.setString(5, resultSet.get("email"));
-//				preparedBlogStmt.execute();
-//
-//			}
+			// Insert Blog
+			for (count = 0; count < numberOfBlogs; count++) {
+				// get existing user
+				resultSet = selectUserById(url, user, password,
+						randomNumber(1, numberOfUsers), con);
+				String insertBlogStmt = "insert into Blog(blogpost, u_id, u_vorname, u_nachname, u_email) values(?,?,?,?,?)";
+				PreparedStatement preparedBlogStmt = con
+						.prepareStatement(insertBlogStmt);
+				preparedBlogStmt.setString(1, randomText(5000));
+				preparedBlogStmt.setInt(2, Integer.valueOf(resultSet.get("id")));
+				preparedBlogStmt.setString(3, resultSet.get("vorname"));
+				preparedBlogStmt.setString(4, resultSet.get("nachname"));
+				preparedBlogStmt.setString(5, resultSet.get("email"));
+				preparedBlogStmt.execute();
+
+			}
 
 			// Insert Comment
 			for (count = 0; count < numberOfComments; count++) {
@@ -140,39 +140,44 @@ public class Test {
 				preparedCommentStmt.execute();
 			}
 
-//			// Insert Likes
-//			for (count = 0; count < numberOfLikes; count++) {
-//				String insertLikeStmt = " insert into Likes(user_id, comment_id, vorname, nachname, email, text, blog_id, blogpost) values(?,?,?,?,?,?,?,?)";
-//				PreparedStatement preparedLikeStmt = con
-//						.prepareStatement(insertLikeStmt);
-//				// get existing comment
-//				resultSetComment = selectCommentByIdDenormalized(url, user,
-//						password, randomNumber(1, numberOfBlogs), con);
-//				// get existing user
-//				resultSetUser = selectUserById(url, user, password,
-//						randomNumber(1, numberOfUsers), con);
-//				preparedLikeStmt.setInt(1,
-//						Integer.valueOf(resultSetUser.get("id")));
-//				preparedLikeStmt.setInt(2,
-//						Integer.valueOf(resultSetComment.get("id")));
-//				preparedLikeStmt.setString(3, resultSetUser.get("vorname"));
-//				preparedLikeStmt.setString(4, resultSetUser.get("nachname"));
-//				preparedLikeStmt.setString(5, resultSetUser.get("email"));
-//				preparedLikeStmt.setString(6, resultSetComment.get("text"));
-//				preparedLikeStmt.setInt(7,
-//						Integer.valueOf(resultSetComment.get("blog_id")));
-//				preparedLikeStmt.setString(8, resultSetComment.get("blogpost"));
-//				try {
-//					preparedLikeStmt.execute();
-//				} catch (SQLException ex) {
-//					if (ex instanceof SQLIntegrityConstraintViolationException) {
-//						System.out.println("Duplicate Key Error");
-//					} else {
-//						Logger lgr = Logger.getLogger(Test.class.getName());
-//						lgr.log(Level.SEVERE, ex.getMessage(), ex);
-//					}
-//				}
-//			}
+			// Insert Likes
+			for (count = 0; count < numberOfLikes; count++) {
+				String insertLikeStmt = " insert into Likes(u_id, u_vorname, u_nachname, u_email, c_id, c_comment, c_user_id, c_vorname, c_nachname, c_email, "
+						+ "b_id, b_blogpost, b_user_id, b_vorname, b_nachname, b_email) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+				
+				PreparedStatement preparedLikeStmt = con.prepareStatement(insertLikeStmt);
+				// get existing user
+				resultSetUser = selectUserById(url, user, password,randomNumber(1, numberOfUsers), con);
+				preparedLikeStmt.setInt(1,Integer.valueOf(resultSetUser.get("id")));
+				preparedLikeStmt.setString(2, resultSetUser.get("vorname"));
+				preparedLikeStmt.setString(3, resultSetUser.get("nachname"));
+				preparedLikeStmt.setString(4, resultSetUser.get("email"));
+				// get existing comment
+				resultSetComment = selectCommentByIdDenormalized(url, user,password, randomNumber(1, numberOfComments), con);
+				preparedLikeStmt.setInt(5,Integer.valueOf(resultSetComment.get("id")));
+				preparedLikeStmt.setString(6, resultSetComment.get("comment"));
+				preparedLikeStmt.setInt(7,Integer.valueOf(resultSetComment.get("u_id")));
+				preparedLikeStmt.setString(8, resultSetComment.get("u_vorname"));
+				preparedLikeStmt.setString(9, resultSetComment.get("u_nachname"));
+				preparedLikeStmt.setString(10, resultSetComment.get("u_email"));
+				preparedLikeStmt.setInt(11,Integer.valueOf(resultSetComment.get("b_id")));
+				preparedLikeStmt.setString(12, resultSetComment.get("b_blogpost"));
+				preparedLikeStmt.setInt(13,Integer.valueOf(resultSetComment.get("b_user_id")));
+				preparedLikeStmt.setString(14, resultSetComment.get("b_vorname"));
+				preparedLikeStmt.setString(15, resultSetComment.get("b_nachname"));
+				preparedLikeStmt.setString(16, resultSetComment.get("b_email"));
+				try {
+					preparedLikeStmt.execute();
+				} catch (SQLException ex) {
+					if (ex instanceof SQLIntegrityConstraintViolationException) {
+						System.out.println(preparedLikeStmt.toString());
+						System.out.println("Duplicate Key Error --> u_id = " + resultSetUser.get("id") + " c_id = " + resultSetComment.get("id"));
+					} else {
+						Logger lgr = Logger.getLogger(Test.class.getName());
+						lgr.log(Level.SEVERE, ex.getMessage(), ex);
+					}
+				}
+			}
 
 			con.commit();
 
@@ -426,7 +431,8 @@ public class Test {
 
 			// Create Prepared Query Statement
 			pst = con
-					.prepareStatement("select id, text, user_id, vorname, nachname, email, blog_id, blogpost from Comment where id=?;");
+					.prepareStatement("select id, comment, u_id, u_vorname, u_nachname, u_email, "
+							+ "b_id, b_blogpost, b_user_id, b_vorname, b_nachname, b_email from Comment where id=?;");
 			pst.setInt(1, id);
 
 			// Execute Query
@@ -436,13 +442,17 @@ public class Test {
 			resultSet = new HashMap<String, String>();
 			while (rs.next()) {
 				resultSet.put("id", String.valueOf(rs.getInt(1)));
-				resultSet.put("text", rs.getString(2));
-				resultSet.put("user_id", String.valueOf(rs.getInt(3)));
-				resultSet.put("vorname", rs.getString(4));
-				resultSet.put("nachname", rs.getString(5));
-				resultSet.put("email", rs.getString(6));
-				resultSet.put("blog_id", String.valueOf(rs.getInt(7)));
-				resultSet.put("blogpost", rs.getString(8));
+				resultSet.put("comment", rs.getString(2));
+				resultSet.put("u_id", String.valueOf(rs.getInt(3)));
+				resultSet.put("u_vorname", rs.getString(4));
+				resultSet.put("u_nachname", rs.getString(5));
+				resultSet.put("u_email", rs.getString(6));
+				resultSet.put("b_id", String.valueOf(rs.getInt(7)));
+				resultSet.put("b_blogpost", rs.getString(8));
+				resultSet.put("b_user_id", String.valueOf(rs.getInt(9)));
+				resultSet.put("b_vorname", rs.getString(10));
+				resultSet.put("b_nachname", rs.getString(11));
+				resultSet.put("b_email", rs.getString(12));
 			}
 
 		} catch (SQLException ex) {
@@ -488,7 +498,7 @@ public class Test {
 				try {
 					// Create Prepared Query Statement
 					pst = con
-							.prepareStatement("select * from Likes where blog_id=?;");
+							.prepareStatement("select * from Likes where b_id=?;");
 					pst.setInt(1, i);
 
 					// Execute Query
@@ -498,9 +508,6 @@ public class Test {
 					HashMap<String, String> resultSet = new HashMap<String, String>();
 					while (rs.next()) {
 						resultSet.put("id", String.valueOf(rs.getInt(1)));
-						resultSet.put("vorname", rs.getString(2));
-						resultSet.put("nachname", rs.getString(3));
-						resultSet.put("email", rs.getString(4));
 					}
 					result.add(resultSet);
 
@@ -575,9 +582,6 @@ public class Test {
 					HashMap<String, String> resultSet = new HashMap<String, String>();
 					while (rs.next()) {
 						resultSet.put("id", String.valueOf(rs.getInt(1)));
-						resultSet.put("vorname", rs.getString(2));
-						resultSet.put("nachname", rs.getString(3));
-						resultSet.put("email", rs.getString(4));
 					}
 					result.add(resultSet);
 
