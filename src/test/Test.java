@@ -26,18 +26,18 @@ public class Test {
 	public static void main(String[] args) {
 
 		// Connection Details
-		String urlNormalized = "jdbc:mysql://192.168.122.71:3306/normalized";
-		String urlDenormalized = "jdbc:mysql://192.168.122.71:3306/denormalized";
-		String user = "proxyuser";
+		String urlNormalized = "jdbc:mysql://192.168.122.244:3306/normalized";
+		String urlDenormalized = "jdbc:mysql://192.168.122.244:3306/denormalized";
+		String user = "testuser";
 		String password = "test1234";
 
-//		long startTime = System.nanoTime();
-//		ArrayList<HashMap<String, String>> result = selectBlogWithAssociatesNormalized(
-//				urlNormalized, user, password);
-//		long estimatedTime = System.nanoTime() - startTime;
-//		double seconds = (double) estimatedTime / 1000000000.0;
-//		System.out.println(result);
-//		System.out.println("Duration: " + seconds);		
+		long startTime = System.nanoTime();
+		ArrayList<HashMap<String, String>> result = selectBlogWithAssociatesNormalized(
+				urlNormalized, user, password);
+		long estimatedTime = System.nanoTime() - startTime;
+		double seconds = (double) estimatedTime / 1000000000.0;
+		System.out.println(result);
+		System.out.println("Duration: " + seconds);		
 		
 //		long startTime = System.nanoTime();
 //		ArrayList<HashMap<String, String>> result = selectBlogWithAssociatesDenormalized(
@@ -568,11 +568,11 @@ public class Test {
 					// Create Prepared Query Statement
 					pst = con
 							.prepareStatement("SELECT id_blog, blogpost as blog_blogpost, user_id as blog_user_id, vorname as blog_vorname, nachname as blog_nachname, email as blog_email, comment_text, comment_user_id, comment_blog_id, comment_vorname, comment_nachname, comment_email, like_user_id, like_comment_id, like_vorname, like_nachname, like_email FROM ( "
-									+ " SELECT text as comment_text,user_id as comment_user_id,blog_id as comment_blog_id,vorname as comment_vorname,nachname as comment_nachname,email as comment_email,like_user_id,like_comment_id,like_vorname,like_nachname,like_email FROM ("
-									+ " SELECT user_id as like_user_id,comment_id as like_comment_id,vorname as like_vorname,nachname as like_nachname,email as like_email FROM Likes JOIN User ON Likes.user_id = User.id_user"
-									+ " ) AS LU JOIN Comment ON LU.like_comment_id = Comment.id_comment JOIN User ON Comment.user_id = User.id_user "
-									+ " ) AS CLU JOIN Blog ON CLU.comment_blog_id = Blog.id_blog JOIN User ON Blog.user_id = User.id_user"
-									+ " where id_blog=?;");
+									+ " SELECT text as comment_text,user_id as comment_user_id,blog_id as comment_blog_id,vorname as comment_vorname,nachname as comment_nachname,email as comment_email,like_user_id,like_comment_id,like_vorname,like_nachname,like_email FROM ( "
+									+ " SELECT user_id as like_user_id,comment_id as like_comment_id,vorname as like_vorname,nachname as like_nachname,email as like_email FROM Likes JOIN User ON Likes.user_id = User.id_user "
+									+ " ) AS LU RIGHT JOIN Comment ON LU.like_comment_id = Comment.id_comment JOIN User ON Comment.user_id = User.id_user "
+									+ " ) AS CLU RIGHT JOIN Blog ON CLU.comment_blog_id = Blog.id_blog JOIN User ON Blog.user_id = User.id_user "
+									+ " where id_blog=?; ");
 					pst.setInt(1, i);
 
 					// Execute Query
