@@ -1,6 +1,5 @@
 package test;
 
-import java.awt.List;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -18,37 +17,83 @@ import java.util.logging.Logger;
 
 public class Test {
 
-	public static int numberOfUsers = 1000;
-	public static int numberOfBlogs = 1000;
-	public static int numberOfComments = 1000;
-	public static int numberOfLikes = 1000;
+	public static int numberOfUsers = 100000;
+	public static int numberOfBlogs = 100000;
+	public static int numberOfComments = 100000;
+	public static int numberOfLikes = 100000;
 
 	public static void main(String[] args) {
 
 		// Connection Details
-		String urlNormalized = "jdbc:mysql://192.168.122.244:3306/normalized";
-		String urlDenormalized = "jdbc:mysql://192.168.122.244:3306/denormalized";
+		String urlNormalized = "jdbc:mysql://192.168.122.15:3306/normalized";
+		String urlDenormalized = "jdbc:mysql://192.168.122.15:3306/denormalized";
 		String user = "testuser";
 		String password = "test1234";
 
-		long startTime = System.nanoTime();
-		ArrayList<HashMap<String, String>> result = selectBlogWithAssociatesNormalized(
-				urlNormalized, user, password);
-		long estimatedTime = System.nanoTime() - startTime;
-		double seconds = (double) estimatedTime / 1000000000.0;
-		System.out.println(result);
-		System.out.println("Duration: " + seconds);		
-		
-//		long startTime = System.nanoTime();
-//		ArrayList<HashMap<String, String>> result = selectBlogWithAssociatesDenormalized(
-//				urlDenormalized, user, password);
-//		long estimatedTime = System.nanoTime() - startTime;
-//		double seconds = (double) estimatedTime / 1000000000.0;
-//		System.out.println(result);
-//		System.out.println("Duration: " + seconds);
-		
-//		 executeInsertDenormalized(urlDenormalized, user, password);
-//		 executeInsertNormalized(urlNormalized, user, password);
+		// executeInsertNormalized(urlNormalized, user, password);
+
+		// // Tag Top Blogger From Normalized Table
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle =
+		// tagTopBlogPosterNormalized(urlNormalized,
+		// user, password);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
+		// Loop through Normalized Table
+		// long startTime = System.nanoTime();
+		// ArrayList<HashMap<String, String>> result =
+		// selectBlogWithAssociatesNormalized(
+		// urlNormalized, user, password);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(result);
+		// System.out.println("Duration: " + seconds);
+
+		// // Get Single Instance From Normalized Table
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle =
+		// selectBlogWithAssociatesNormalizedSingle(
+		// urlNormalized, user, password, 22341);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
+		// executeInsertDenormalized(urlDenormalized, user, password);
+
+		// // Tag Top Blogger From Denormalized Table
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle =
+		// tagTopBlogPosterDenormalized(urlDenormalized,
+		// user, password);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
+		// // Loop through Denormalized Table
+		// long startTime = System.nanoTime();
+		// ArrayList<HashMap<String, String>> result =
+		// selectBlogWithAssociatesDenormalized(
+		// urlDenormalized, user, password);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(result);
+		// System.out.println("Duration: " + seconds);
+
+		// // Get Single Instance From Denormalized Table
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle =
+		// selectBlogWithAssociatesDenormalizedSingle(
+		// urlDenormalized, user, password, 98765);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
 	}
 
 	public static String randomText(Integer bits) {
@@ -111,7 +156,8 @@ public class Test {
 				PreparedStatement preparedBlogStmt = con
 						.prepareStatement(insertBlogStmt);
 				preparedBlogStmt.setString(1, randomText(5000));
-				preparedBlogStmt.setInt(2, Integer.valueOf(resultSet.get("id")));
+				preparedBlogStmt
+						.setInt(2, Integer.valueOf(resultSet.get("id")));
 				preparedBlogStmt.setString(3, resultSet.get("vorname"));
 				preparedBlogStmt.setString(4, resultSet.get("nachname"));
 				preparedBlogStmt.setString(5, resultSet.get("email"));
@@ -122,21 +168,27 @@ public class Test {
 			// Insert Comment
 			for (count = 0; count < numberOfComments; count++) {
 				String insertCommentStmt = "insert into Comment(comment, u_id, u_vorname, u_nachname, u_email, b_id, b_blogpost, b_user_id, b_vorname, b_nachname, b_email) values(?,?,?,?,?,?,?,?,?,?,?)";
-				PreparedStatement preparedCommentStmt = con.prepareStatement(insertCommentStmt);
+				PreparedStatement preparedCommentStmt = con
+						.prepareStatement(insertCommentStmt);
 				preparedCommentStmt.setString(1, randomText(2000));
 				// get existing blog and user
-				resultSet = selectUserById(url, user, password,randomNumber(1, numberOfUsers), con);
-				preparedCommentStmt.setInt(2, Integer.valueOf(resultSet.get("id")));
+				resultSet = selectUserById(url, user, password,
+						randomNumber(1, numberOfUsers), con);
+				preparedCommentStmt.setInt(2,
+						Integer.valueOf(resultSet.get("id")));
 				preparedCommentStmt.setString(3, resultSet.get("vorname"));
 				preparedCommentStmt.setString(4, resultSet.get("nachname"));
 				preparedCommentStmt.setString(5, resultSet.get("email"));
-				resultSet = selectBlogByIdDenormalized(url, user, password,randomNumber(1, numberOfBlogs), con);
-				preparedCommentStmt.setInt(6,Integer.valueOf(resultSet.get("id")));
+				resultSet = selectBlogByIdDenormalized(url, user, password,
+						randomNumber(1, numberOfBlogs), con);
+				preparedCommentStmt.setInt(6,
+						Integer.valueOf(resultSet.get("id")));
 				preparedCommentStmt.setString(7, resultSet.get("blogpost"));
-				preparedCommentStmt.setInt(8, Integer.valueOf(resultSet.get("u_id")));
+				preparedCommentStmt.setInt(8,
+						Integer.valueOf(resultSet.get("u_id")));
 				preparedCommentStmt.setString(9, resultSet.get("u_vorname"));
 				preparedCommentStmt.setString(10, resultSet.get("u_nachname"));
-				preparedCommentStmt.setString(11, resultSet.get("u_email"));	
+				preparedCommentStmt.setString(11, resultSet.get("u_email"));
 				preparedCommentStmt.execute();
 			}
 
@@ -144,34 +196,49 @@ public class Test {
 			for (count = 0; count < numberOfLikes; count++) {
 				String insertLikeStmt = " insert into Likes(u_id, u_vorname, u_nachname, u_email, c_id, c_comment, c_user_id, c_vorname, c_nachname, c_email, "
 						+ "b_id, b_blogpost, b_user_id, b_vorname, b_nachname, b_email) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-				
-				PreparedStatement preparedLikeStmt = con.prepareStatement(insertLikeStmt);
+
+				PreparedStatement preparedLikeStmt = con
+						.prepareStatement(insertLikeStmt);
 				// get existing user
-				resultSetUser = selectUserById(url, user, password,randomNumber(1, numberOfUsers), con);
-				preparedLikeStmt.setInt(1,Integer.valueOf(resultSetUser.get("id")));
+				resultSetUser = selectUserById(url, user, password,
+						randomNumber(1, numberOfUsers), con);
+				preparedLikeStmt.setInt(1,
+						Integer.valueOf(resultSetUser.get("id")));
 				preparedLikeStmt.setString(2, resultSetUser.get("vorname"));
 				preparedLikeStmt.setString(3, resultSetUser.get("nachname"));
 				preparedLikeStmt.setString(4, resultSetUser.get("email"));
 				// get existing comment
-				resultSetComment = selectCommentByIdDenormalized(url, user,password, randomNumber(1, numberOfComments), con);
-				preparedLikeStmt.setInt(5,Integer.valueOf(resultSetComment.get("id")));
+				resultSetComment = selectCommentByIdDenormalized(url, user,
+						password, randomNumber(1, numberOfComments), con);
+				preparedLikeStmt.setInt(5,
+						Integer.valueOf(resultSetComment.get("id")));
 				preparedLikeStmt.setString(6, resultSetComment.get("comment"));
-				preparedLikeStmt.setInt(7,Integer.valueOf(resultSetComment.get("u_id")));
-				preparedLikeStmt.setString(8, resultSetComment.get("u_vorname"));
-				preparedLikeStmt.setString(9, resultSetComment.get("u_nachname"));
+				preparedLikeStmt.setInt(7,
+						Integer.valueOf(resultSetComment.get("u_id")));
+				preparedLikeStmt
+						.setString(8, resultSetComment.get("u_vorname"));
+				preparedLikeStmt.setString(9,
+						resultSetComment.get("u_nachname"));
 				preparedLikeStmt.setString(10, resultSetComment.get("u_email"));
-				preparedLikeStmt.setInt(11,Integer.valueOf(resultSetComment.get("b_id")));
-				preparedLikeStmt.setString(12, resultSetComment.get("b_blogpost"));
-				preparedLikeStmt.setInt(13,Integer.valueOf(resultSetComment.get("b_user_id")));
-				preparedLikeStmt.setString(14, resultSetComment.get("b_vorname"));
-				preparedLikeStmt.setString(15, resultSetComment.get("b_nachname"));
+				preparedLikeStmt.setInt(11,
+						Integer.valueOf(resultSetComment.get("b_id")));
+				preparedLikeStmt.setString(12,
+						resultSetComment.get("b_blogpost"));
+				preparedLikeStmt.setInt(13,
+						Integer.valueOf(resultSetComment.get("b_user_id")));
+				preparedLikeStmt.setString(14,
+						resultSetComment.get("b_vorname"));
+				preparedLikeStmt.setString(15,
+						resultSetComment.get("b_nachname"));
 				preparedLikeStmt.setString(16, resultSetComment.get("b_email"));
 				try {
 					preparedLikeStmt.execute();
 				} catch (SQLException ex) {
 					if (ex instanceof SQLIntegrityConstraintViolationException) {
 						System.out.println(preparedLikeStmt.toString());
-						System.out.println("Duplicate Key Error --> u_id = " + resultSetUser.get("id") + " c_id = " + resultSetComment.get("id"));
+						System.out.println("Duplicate Key Error --> b_id = "
+								+ resultSetUser.get("id") + " c_id = "
+								+ resultSetComment.get("id"));
 					} else {
 						Logger lgr = Logger.getLogger(Test.class.getName());
 						lgr.log(Level.SEVERE, ex.getMessage(), ex);
@@ -265,7 +332,7 @@ public class Test {
 				PreparedStatement preparedLikeStmt = con
 						.prepareStatement(insertLikeStmt);
 				preparedLikeStmt.setInt(1, randomNumber(1, numberOfUsers));
-				preparedLikeStmt.setInt(2, randomNumber(1, numberOfComments));
+				preparedLikeStmt.setInt(2, randomNumber(1, numberOfBlogs));
 				try {
 					preparedLikeStmt.execute();
 				} catch (SQLException ex) {
@@ -494,7 +561,7 @@ public class Test {
 
 			int i;
 			for (i = 1; i <= numberOfBlogs; i++) {
-				
+
 				try {
 					// Create Prepared Query Statement
 					pst = con
@@ -531,14 +598,12 @@ public class Test {
 				}
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 			if (con != null) {
 				try {
 					con.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -546,6 +611,96 @@ public class Test {
 		}
 
 		return result;
+
+	}
+
+	public static HashMap<String, String> selectBlogWithAssociatesDenormalizedSingle(
+			String url, String user, String password, Integer id) {
+
+		HashMap<String, String> resultSet = null;
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+
+			// Create Prepared Query Statement
+			pst = con.prepareStatement("select * from Likes where b_id=?;");
+			pst.setInt(1, id);
+
+			// Execute Query
+			rs = pst.executeQuery();
+
+			// Loop through Result and build Result Set
+			resultSet = new HashMap<String, String>();
+			while (rs.next()) {
+				resultSet.put("id", String.valueOf(rs.getInt(1)));
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		return resultSet;
+
+	}
+
+	public static HashMap<String, String> selectBlogWithAssociatesNormalizedSingle(
+			String url, String user, String password, Integer id) {
+
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = null;
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+
+			// Create Prepared Query Statement
+			pst = con
+					.prepareStatement("SELECT id_blog, blogpost as blog_blogpost, user_id as blog_user_id, vorname as blog_vorname, nachname as blog_nachname, email as blog_email, comment_text, comment_user_id, comment_blog_id, comment_vorname, comment_nachname, comment_email, like_user_id, like_comment_id, like_vorname, like_nachname, like_email FROM ( "
+							+ " SELECT text as comment_text,user_id as comment_user_id,blog_id as comment_blog_id,vorname as comment_vorname,nachname as comment_nachname,email as comment_email,like_user_id,like_comment_id,like_vorname,like_nachname,like_email FROM ( "
+							+ " SELECT user_id as like_user_id,comment_id as like_comment_id,vorname as like_vorname,nachname as like_nachname,email as like_email FROM Likes JOIN User ON Likes.user_id = User.id_user "
+							+ " ) AS LU RIGHT JOIN Comment ON LU.like_comment_id = Comment.id_comment JOIN User ON Comment.user_id = User.id_user "
+							+ " ) AS CLU RIGHT JOIN Blog ON CLU.comment_blog_id = Blog.id_blog JOIN User ON Blog.user_id = User.id_user "
+							+ " where id_blog=?; ");
+			pst.setInt(1, id);
+
+			// Execute Query
+			rs = pst.executeQuery();
+
+			// Loop through Result and build Result Set
+			resultSet = new HashMap<String, String>();
+			while (rs.next()) {
+				resultSet.put("id", String.valueOf(rs.getInt(1)));
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		return resultSet;
 
 	}
 
@@ -563,7 +718,7 @@ public class Test {
 
 			int i;
 			for (i = 1; i <= numberOfBlogs; i++) {
-				
+
 				try {
 					// Create Prepared Query Statement
 					pst = con
@@ -605,14 +760,12 @@ public class Test {
 				}
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 			if (con != null) {
 				try {
 					con.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -622,4 +775,161 @@ public class Test {
 		return result;
 
 	}
+
+	public static HashMap<String, String> tagTopBlogPosterNormalized(
+			String url, String user, String password) {
+
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = new HashMap<String, String>();
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+			try {
+				con.setAutoCommit(false);
+				con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+			pst = con
+					.prepareStatement("SELECT user_id FROM Blog GROUP BY user_id ORDER BY count(user_id) DESC limit 1;");
+
+			// Execute Query
+			rs = pst.executeQuery();
+
+			// Loop through Result and build Result Set
+
+			while (rs.next()) {
+				pst = con
+						.prepareStatement("UPDATE User SET rank = ? WHERE id_user = ?;");
+				pst.setString(1, "Top Blogger");
+				pst.setInt(2, rs.getInt(1));
+
+				resultSet.put("Result Code",
+						String.valueOf(pst.executeUpdate()));
+			}
+
+			con.commit();
+
+		} catch (SQLException ex) {
+			Logger lgr = Logger.getLogger(Test.class.getName());
+			lgr.log(Level.SEVERE, ex.getMessage(), ex);
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+
+			} catch (SQLException ex) {
+				Logger lgr = Logger.getLogger(Test.class.getName());
+				lgr.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		}
+		return resultSet;
+
+	}
+
+	public static HashMap<String, String> tagTopBlogPosterDenormalized(
+			String url, String user, String password) {
+
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = new HashMap<String, String>();
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+			try {
+				con.setAutoCommit(false);
+				con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+			pst = con
+					.prepareStatement("SELECT u_id, count(b_user_id) FROM (SELECT u_id, b_user_id FROM Likes) as Test GROUP BY b_user_id ORDER BY count(b_user_id) DESC limit 1;");
+
+			// Execute Query
+			rs = pst.executeQuery();
+
+			// Loop through Result and build Result Set
+
+			while (rs.next()) {
+				pst = con
+						.prepareStatement("UPDATE Likes SET rank = ? WHERE u_id = ?;");
+				pst.setString(1, "Top Blogger");
+				pst.setInt(2, rs.getInt(1));
+
+				resultSet.put("Result Code",
+						String.valueOf(pst.executeUpdate()));
+				pst.close();
+
+				pst = con
+						.prepareStatement("UPDATE Likes SET b_rank = ? WHERE b_user_id = ?;");
+				pst.setString(1, "Top Blogger");
+				pst.setInt(2, rs.getInt(1));
+
+				resultSet.put("Result Code",
+						String.valueOf(pst.executeUpdate()));
+				pst.close();
+
+				pst = con
+						.prepareStatement("UPDATE Likes SET c_rank = ? WHERE c_user_id = ?;");
+				pst.setString(1, "Top Blogger");
+				pst.setInt(2, rs.getInt(1));
+
+				resultSet.put("Result Code",
+						String.valueOf(pst.executeUpdate()));
+			}
+
+			// Execute Query
+
+			// String insertUserStmt =
+			// "insert into User(vorname, nachname, email) values(?, ?, ?)";
+			// PreparedStatement preparedUserStmt = con
+			// .prepareStatement(insertUserStmt);
+			// preparedUserStmt.setString(1, randomText(100));
+			// preparedUserStmt.setString(2, randomText(150));
+			// preparedUserStmt.setString(3, randomText(120) + "@"
+			// + randomText(20) + "." + randomText(10));
+			// preparedUserStmt.execute();
+
+			con.commit();
+
+		} catch (SQLException ex) {
+			Logger lgr = Logger.getLogger(Test.class.getName());
+			lgr.log(Level.SEVERE, ex.getMessage(), ex);
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+
+			} catch (SQLException ex) {
+				Logger lgr = Logger.getLogger(Test.class.getName());
+				lgr.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		}
+		return resultSet;
+
+	}
+
 }
