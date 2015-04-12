@@ -62,6 +62,17 @@ public class Test {
 		// System.out.println(resultSingle);
 		// System.out.println("Duration: " + seconds);
 
+		// updateUserNormalizedWithSwords(urlNormalized, user, password);
+		//
+		// // Transaction
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle = moveItemBetweenUserNormalizedTransaction(
+		// urlNormalized, user, password, 1, 2, 3);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
 		// executeInsertDenormalized(urlDenormalized, user, password);
 
 		// // Tag Top Blogger From Denormalized Table
@@ -787,12 +798,6 @@ public class Test {
 		try {
 			// Create Connection
 			con = DriverManager.getConnection(url, user, password);
-			try {
-				con.setAutoCommit(false);
-				con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
 
 			pst = con
 					.prepareStatement("SELECT user_id FROM Blog GROUP BY user_id ORDER BY count(user_id) DESC limit 1;");
@@ -811,8 +816,6 @@ public class Test {
 				resultSet.put("Result Code",
 						String.valueOf(pst.executeUpdate()));
 			}
-
-			con.commit();
 
 		} catch (SQLException ex) {
 			Logger lgr = Logger.getLogger(Test.class.getName());
@@ -850,12 +853,6 @@ public class Test {
 		try {
 			// Create Connection
 			con = DriverManager.getConnection(url, user, password);
-			try {
-				con.setAutoCommit(false);
-				con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
 
 			pst = con
 					.prepareStatement("SELECT u_id, count(b_user_id) FROM (SELECT u_id, b_user_id FROM Likes) as Test GROUP BY b_user_id ORDER BY count(b_user_id) DESC limit 1;");
@@ -893,20 +890,6 @@ public class Test {
 						String.valueOf(pst.executeUpdate()));
 			}
 
-			// Execute Query
-
-			// String insertUserStmt =
-			// "insert into User(vorname, nachname, email) values(?, ?, ?)";
-			// PreparedStatement preparedUserStmt = con
-			// .prepareStatement(insertUserStmt);
-			// preparedUserStmt.setString(1, randomText(100));
-			// preparedUserStmt.setString(2, randomText(150));
-			// preparedUserStmt.setString(3, randomText(120) + "@"
-			// + randomText(20) + "." + randomText(10));
-			// preparedUserStmt.execute();
-
-			con.commit();
-
 		} catch (SQLException ex) {
 			Logger lgr = Logger.getLogger(Test.class.getName());
 			lgr.log(Level.SEVERE, ex.getMessage(), ex);
@@ -932,4 +915,172 @@ public class Test {
 
 	}
 
+	public static HashMap<String, String> moveItemBetweenUserNormalizedTransaction(
+			String url, String user, String password, Integer from_id,
+			Integer to_id, Integer itemcount) {
+
+		// Helper Variables
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = new HashMap<String, String>();
+
+		Integer id = 1;
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+
+			// Create Transaction Object and set state to INIT
+			String transactionStmt = "INSERT INTO Transaction(transaction_id, from_user_id, to_user_id, itemcount, state) VALUES (?,?,?,?,?)";
+			PreparedStatement preparedTransactionStmt = con
+					.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, 1);
+			preparedTransactionStmt.setInt(2, 1);
+			preparedTransactionStmt.setInt(3, 2);
+			preparedTransactionStmt.setInt(4, itemcount);
+			preparedTransactionStmt.setString(5, "init");
+			preparedTransactionStmt.execute();
+
+			// Retrieve Transaction
+			pst = con
+					.prepareStatement("SELECT * FROM Transaction WHERE transaction_id = ?");
+			pst.setInt(1, id);
+			rs = pst.executeQuery();
+
+			while (rs.next()) {
+				from_id = rs.getInt(2);
+				to_id = rs.getInt(3);
+				itemcount = rs.getInt(4);
+			}
+
+			// Set State to PENDING
+			transactionStmt = "UPDATE Transaction SET state = ? WHERE transaction_id = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setString(1, "pending");
+			preparedTransactionStmt.setInt(2, id);
+			preparedTransactionStmt.execute();
+
+			// Set Transaction to 1 and Update Item Count
+			transactionStmt = "UPDATE User SET transaction = 1, swords = swords + ? WHERE id_user = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, itemcount);
+			preparedTransactionStmt.setInt(2, from_id);
+			preparedTransactionStmt.execute();
+
+			// Set Transaction to 1 and Update Item Count
+			transactionStmt = "UPDATE User SET transaction = 1, swords = swords - ? WHERE id_user = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, itemcount);
+			preparedTransactionStmt.setInt(2, to_id);
+			preparedTransactionStmt.execute();
+
+			// Set State to COMMITTED
+			transactionStmt = "UPDATE Transaction SET state = ? WHERE transaction_id = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setString(1, "committed");
+			preparedTransactionStmt.setInt(2, id);
+			preparedTransactionStmt.execute();
+
+			// Set Transaction to 0
+			transactionStmt = "UPDATE User SET transaction = 0 WHERE id_user = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, from_id);
+			preparedTransactionStmt.execute();
+
+			// Set Transaction to 0
+			transactionStmt = "UPDATE User SET transaction = 0 WHERE id_user = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, from_id);
+			preparedTransactionStmt.execute();
+
+			// Set State to DONE
+			transactionStmt = "UPDATE Transaction SET state = ? WHERE transaction_id = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setString(1, "done");
+			preparedTransactionStmt.setInt(2, id);
+			preparedTransactionStmt.execute();
+
+			// Delete Transaction Object
+			transactionStmt = "DELETE FROM Transaction WHERE transaction_id = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, id);
+			preparedTransactionStmt.execute();
+
+		} catch (SQLException ex) {
+			Logger lgr = Logger.getLogger(Test.class.getName());
+			lgr.log(Level.SEVERE, ex.getMessage(), ex);
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+
+			} catch (SQLException ex) {
+				Logger lgr = Logger.getLogger(Test.class.getName());
+				lgr.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		}
+
+		return resultSet;
+
+	}
+
+	public static HashMap<String, String> updateUserNormalizedWithSwords(
+			String url, String user, String password) {
+
+		// Helper Variables
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = new HashMap<String, String>();
+
+		Integer id = 1;
+		Integer from_id = null;
+		Integer to_id = null;
+		Integer itemcount = null;
+		String state = null;
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+
+			// Update Statement
+			String transactionStmt = "UPDATE User SET swords = 5";
+			PreparedStatement preparedTransactionStmt = con
+					.prepareStatement(transactionStmt);
+			preparedTransactionStmt.execute();
+
+		} catch (SQLException ex) {
+			Logger lgr = Logger.getLogger(Test.class.getName());
+			lgr.log(Level.SEVERE, ex.getMessage(), ex);
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+
+			} catch (SQLException ex) {
+				Logger lgr = Logger.getLogger(Test.class.getName());
+				lgr.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		}
+
+		return resultSet;
+
+	}
 }
