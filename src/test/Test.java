@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,17 +18,17 @@ import java.util.logging.Logger;
 
 public class Test {
 
-	public static int numberOfUsers = 100000;
-	public static int numberOfBlogs = 100000;
-	public static int numberOfComments = 100000;
-	public static int numberOfLikes = 100000;
+	public static int numberOfUsers = 2000;
+	public static int numberOfBlogs = 2000;
+	public static int numberOfComments = 2000;
+	public static int numberOfLikes = 90000;
 
 	public static void main(String[] args) {
 
 		// Connection Details
-		String urlNormalized = "jdbc:mysql://192.168.122.15:3306/normalized";
-		String urlDenormalized = "jdbc:mysql://192.168.122.15:3306/denormalized";
-		String user = "testuser";
+		String urlNormalized = "jdbc:mysql://192.168.122.71:3306/normalized";
+		String urlDenormalized = "jdbc:mysql://192.168.122.71:3306/denormalized";
+		String user = "proxyuser";
 		String password = "test1234";
 
 		// executeInsertNormalized(urlNormalized, user, password);
@@ -56,17 +57,37 @@ public class Test {
 		// long startTime = System.nanoTime();
 		// HashMap<String, String> resultSingle =
 		// selectBlogWithAssociatesNormalizedSingle(
-		// urlNormalized, user, password, 22341);
+		// urlNormalized, user, password, 22);
 		// long estimatedTime = System.nanoTime() - startTime;
 		// double seconds = (double) estimatedTime / 1000000000.0;
 		// System.out.println(resultSingle);
 		// System.out.println("Duration: " + seconds);
 
 		// updateUserNormalizedWithSwords(urlNormalized, user, password);
-		//
-		// // Transaction
+
+		// // INNO DB Transaction
 		// long startTime = System.nanoTime();
-		// HashMap<String, String> resultSingle = moveItemBetweenUserNormalizedTransaction(
+		// HashMap<String, String> resultSingle =
+		// moveItemBetweenUserNormalizedinnoDBTransaction(
+		// urlNormalized, user, password, 1, 2, 3);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
+		// // Application based Transaction
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle =
+		// moveItemBetweenUserNormalizedTransaction(
+		// urlNormalized, user, password, 1, 2, 3);
+		// long estimatedTime = System.nanoTime() - startTime;
+		// double seconds = (double) estimatedTime / 1000000000.0;
+		// System.out.println(resultSingle);
+		// System.out.println("Duration: " + seconds);
+
+		// // With no Transaction
+		// long startTime = System.nanoTime();
+		// HashMap<String, String> resultSingle = moveItemBetweenUserNormalized(
 		// urlNormalized, user, password, 1, 2, 3);
 		// long estimatedTime = System.nanoTime() - startTime;
 		// double seconds = (double) estimatedTime / 1000000000.0;
@@ -95,7 +116,7 @@ public class Test {
 		// System.out.println(result);
 		// System.out.println("Duration: " + seconds);
 
-		// // Get Single Instance From Denormalized Table
+		// Get Single Instance From Denormalized Table
 		// long startTime = System.nanoTime();
 		// HashMap<String, String> resultSingle =
 		// selectBlogWithAssociatesDenormalizedSingle(
@@ -139,12 +160,12 @@ public class Test {
 			Map<String, String> resultSetComment = null;
 			Map<String, String> resultSetUser = null;
 
-			try {
-				con.setAutoCommit(false);
-				con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			// try {
+			// con.setAutoCommit(false);
+			// con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			// } catch (SQLException e) {
+			// e.printStackTrace();
+			// }
 
 			// Insert User
 			for (count = 0; count < numberOfUsers; count++) {
@@ -257,7 +278,7 @@ public class Test {
 				}
 			}
 
-			con.commit();
+			// con.commit();
 
 		} catch (SQLException ex) {
 			Logger lgr = Logger.getLogger(Test.class.getName());
@@ -356,7 +377,7 @@ public class Test {
 				}
 			}
 
-			con.commit();
+			// con.commit();
 
 		} catch (SQLException ex) {
 			Logger lgr = Logger.getLogger(Test.class.getName());
@@ -873,7 +894,7 @@ public class Test {
 				pst.close();
 
 				pst = con
-						.prepareStatement("UPDATE Likes SET b_rank = ? WHERE b_user_id = ?;");
+						.prepareStatement("UPDATE Likes SET rank = ? WHERE b_user_id = ?;");
 				pst.setString(1, "Top Blogger");
 				pst.setInt(2, rs.getInt(1));
 
@@ -882,7 +903,7 @@ public class Test {
 				pst.close();
 
 				pst = con
-						.prepareStatement("UPDATE Likes SET c_rank = ? WHERE c_user_id = ?;");
+						.prepareStatement("UPDATE Likes SET rank = ? WHERE c_user_id = ?;");
 				pst.setString(1, "Top Blogger");
 				pst.setInt(2, rs.getInt(1));
 
@@ -911,6 +932,123 @@ public class Test {
 				lgr.log(Level.WARNING, ex.getMessage(), ex);
 			}
 		}
+		return resultSet;
+
+	}
+
+	public static HashMap<String, String> moveItemBetweenUserNormalized(
+			String url, String user, String password, Integer from_id,
+			Integer to_id, Integer itemcount) {
+
+		// Helper Variables
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = new HashMap<String, String>();
+
+		Integer id = 1;
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+
+			// Update Item Count
+			String transactionStmt = "UPDATE User SET swords = swords + ? WHERE id_user = ?";
+			PreparedStatement preparedTransactionStmt = con
+					.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, itemcount);
+			preparedTransactionStmt.setInt(2, from_id);
+			preparedTransactionStmt.execute();
+
+			// Update Item Count
+			transactionStmt = "UPDATE User SET swords = swords - ? WHERE id_user = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, itemcount);
+			preparedTransactionStmt.setInt(2, to_id);
+			preparedTransactionStmt.execute();
+
+		} catch (SQLException ex) {
+			Logger lgr = Logger.getLogger(Test.class.getName());
+			lgr.log(Level.SEVERE, ex.getMessage(), ex);
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+
+			} catch (SQLException ex) {
+				Logger lgr = Logger.getLogger(Test.class.getName());
+				lgr.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		}
+
+		return resultSet;
+
+	}
+
+	public static HashMap<String, String> moveItemBetweenUserNormalizedinnoDBTransaction(
+			String url, String user, String password, Integer from_id,
+			Integer to_id, Integer itemcount) {
+
+		// Helper Variables
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		HashMap<String, String> resultSet = new HashMap<String, String>();
+
+		Integer id = 1;
+
+		try {
+			// Create Connection
+			con = DriverManager.getConnection(url, user, password);
+			con.setAutoCommit(false);
+
+			// Update Item Count
+			String transactionStmt = "UPDATE User SET swords = swords + ? WHERE id_user = ?";
+			PreparedStatement preparedTransactionStmt = con
+					.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, itemcount);
+			preparedTransactionStmt.setInt(2, from_id);
+			preparedTransactionStmt.execute();
+
+			// Update Item Count
+			transactionStmt = "UPDATE User SET swords = swords - ? WHERE id_user = ?";
+			preparedTransactionStmt = con.prepareStatement(transactionStmt);
+			preparedTransactionStmt.setInt(1, itemcount);
+			preparedTransactionStmt.setInt(2, to_id);
+			preparedTransactionStmt.execute();
+
+			con.commit();
+
+		} catch (SQLException ex) {
+			Logger lgr = Logger.getLogger(Test.class.getName());
+			lgr.log(Level.SEVERE, ex.getMessage(), ex);
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+
+			} catch (SQLException ex) {
+				Logger lgr = Logger.getLogger(Test.class.getName());
+				lgr.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		}
+
 		return resultSet;
 
 	}
