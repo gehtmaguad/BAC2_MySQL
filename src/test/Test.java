@@ -97,14 +97,14 @@ public class Test {
 		// executeInsertDenormalized(urlDenormalized, user, password);
 
 		// // Tag Top Blogger From Denormalized Table
-		// long startTime = System.nanoTime();
-		// HashMap<String, String> resultSingle =
-		// tagTopBlogPosterDenormalized(urlDenormalized,
-		// user, password);
-		// long estimatedTime = System.nanoTime() - startTime;
-		// double seconds = (double) estimatedTime / 1000000000.0;
-		// System.out.println(resultSingle);
-		// System.out.println("Duration: " + seconds);
+		 long startTime = System.nanoTime();
+		 HashMap<String, String> resultSingle =
+		 tagTopBlogPosterDenormalized(urlDenormalized,
+		 user, password);
+		 long estimatedTime = System.nanoTime() - startTime;
+		 double seconds = (double) estimatedTime / 1000000000.0;
+		 System.out.println(resultSingle);
+		 System.out.println("Duration: " + seconds);
 
 		// // Loop through Denormalized Table
 		// long startTime = System.nanoTime();
@@ -821,7 +821,7 @@ public class Test {
 			con = DriverManager.getConnection(url, user, password);
 
 			pst = con
-					.prepareStatement("SELECT user_id FROM Blog GROUP BY user_id ORDER BY count(user_id) DESC limit 1;");
+					.prepareStatement("SELECT user_id FROM Blog GROUP BY user_id ORDER BY count(user_id) DESC, user_id limit 1;");
 
 			// Execute Query
 			rs = pst.executeQuery();
@@ -876,7 +876,7 @@ public class Test {
 			con = DriverManager.getConnection(url, user, password);
 
 			pst = con
-					.prepareStatement("SELECT u_id, count(b_user_id) FROM (SELECT u_id, b_user_id FROM Likes) as Test GROUP BY b_user_id ORDER BY count(b_user_id) DESC limit 1;");
+					.prepareStatement("SELECT b_user_id FROM (SELECT b_user_id FROM Likes GROUP BY b_id) AS BlogReduced GROUP BY b_user_id ORDER BY count(b_user_id) DESC, b_user_id LIMIT 1;");
 
 			// Execute Query
 			rs = pst.executeQuery();
